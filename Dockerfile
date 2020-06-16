@@ -11,8 +11,7 @@ RUN apk add --update --no-cache \
     python3-dev \
     py-pip \
     build-base \
-    && pip install awscli \
-    && apk --purge -v del py-pip
+    && pip install awscli
 
 # Copy backup script to container
 COPY ${BUILD_DIR}/scripts/* /usr/bin/

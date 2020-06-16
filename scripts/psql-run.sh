@@ -9,5 +9,5 @@ database=$1
 shift
 cmd=$@
 
-psql -U $DATABASE_USER -h $DATABASE_HOST -D $database -c "$cmd"
+psql -U $DATABASE_USER -h $DATABASE_HOST -d $database -c "$cmd"
 

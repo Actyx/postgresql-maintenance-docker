@@ -54,10 +54,13 @@ for database in ${BACKUP_DATABASES}; do
 
   if [[ ${database} == *:* ]]; then
     tables=$(echo ${database} | cut -f2 -d: | sed 's/,/ -t /')
+    echo "Dumping tables ${tables} in database ${database}" > /dev/stderr
     pg_dump -h ${DATABASE_HOST} -U ${DATABASE_USER} -t ${tables} -d ${database_name} | gzip > ${dumpfile}
   else
+    echo "Dumping database ${database}" > /dev/stderr
     pg_dump -h ${DATABASE_HOST} -U ${DATABASE_USER} -d ${database_name} | gzip > ${dumpfile}
   fi
+  echo "Uploading ${dumpfile} to ${s3_path}/${now}/${dumpfile}"
   aws s3 cp  --region eu-central-1 ${dumpfile} ${s3_path}/${now}/${dumpfile}
   rm ${dumpfile}
 done
@@ -74,17 +77,12 @@ if [[ -n "${BACKUP_CLEANUP_SECONDS}" ]]; then
   cleanup_timestamp=$(($today_seconds - ${BACKUP_CLEANUP_SECONDS}))
 
   for folder in ${folder_list}; do
-    folder_date_created=$(echo "$folder" | cut -f 2 -d " " | cut -f 1 -d "/" | grep -v PRE)
-
-    # Deal with both mac and linux `date`
-    if [[ $(uname -s) == "Darwin" ]]; then
-      folder_date_created_seconds=$(date -j -f "%Y-%m-%d" "$folder_date_created" "+%s")
-    else
-      folder_date_created_seconds=$(date -d ${folder_date_created} +%s)
-    fi
+    folder_date_created=$(echo "$folder" | cut -f 2 -d " " | cut -f 1 -d "/" | grep -v PRE | sed 's/_/ /')
+    folder_date_created_seconds=$(date -d "${folder_date_created}" +%s)
 
     # Test folder creation date
     if [[ ${folder_date_created_seconds} -lt ${cleanup_timestamp} ]];then
+      echo "Removing old dump ${s3_path}/${folder}" > /dev/stderr
       aws s3 rm --recursive ${s3_path}/${folder}
     fi
 done

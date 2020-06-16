@@ -38,7 +38,7 @@ fi
 # Get times for path-making
 timestamp=`date +%m_%d_%Y_%H%M`
 
-now=$(date +%Y-%m-%d_%H:%M:%s)
+now=$(date +%Y-%m-%d_%H:%M:%S)
 
 s3_path=s3://${BACKUP_S3_BUCKET}/${BACKUP_FOLDER_NAME}
 
@@ -52,7 +52,7 @@ for database in ${BACKUP_DATABASES}; do
     dumpfile=${BACKUP_TMP}/${database_name}.gz
   fi
 
-  if [[ ${database} =~ '.*:.*' ]]; then
+  if [[ ${database} == *:* ]]; then
     tables=$(echo ${database} | cut -f2 -d: | sed 's/,/ -t /')
     pg_dump -h ${DATABASE_HOST} -U ${DATABASE_USER} -t ${tables} -d ${database_name} | gzip > ${dumpfile}
   else
@@ -63,7 +63,7 @@ for database in ${BACKUP_DATABASES}; do
 done
 
 # Clean up the output of `aws ls` to only contain folder names
-for folder in $(aws s3 ls ${s3_path}); do
+for folder in $(aws s3 ls ${s3_path}/); do
   if [[ ${folder} != "PRE" ]];then
     folder_list=${folder_list}" ${folder}"
   fi
